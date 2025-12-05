@@ -161,7 +161,7 @@ export function useBatchAddAccounts() {
 
   // 批量处理账户
   const processBatch = useCallback(
-    async (accounts: BatchAccountData[], namePrefix: string = 'Outlook账户') => {
+    async (accounts: BatchAccountData[]) => {
       if (accounts.length === 0) {
         toast.error('没有有效的账户数据');
         return;
@@ -191,8 +191,7 @@ export function useBatchAddAccounts() {
 
           // 并发处理当前批次
           const batchPromises = batch.map((account, batchIndex) => {
-            const accountName = `${namePrefix} ${i + batchIndex + 1}`;
-            return processAccount(account, accountName);
+            return processAccount(account, account.email);
           });
 
           const batchResults = await Promise.allSettled(batchPromises);
@@ -257,21 +256,18 @@ export function useBatchAddAccounts() {
   );
 
   // 重试失败的账户
-  const retryFailed = useCallback(
-    async (namePrefix: string = 'Outlook账户') => {
-      const failedAccounts = progress.results
-        .filter((result) => !result.success)
-        .map((result) => result.data);
+  const retryFailed = useCallback(async () => {
+    const failedAccounts = progress.results
+      .filter((result) => !result.success)
+      .map((result) => result.data);
 
-      if (failedAccounts.length === 0) {
-        toast.info('没有失败的账户需要重试');
-        return;
-      }
+    if (failedAccounts.length === 0) {
+      toast.info('没有失败的账户需要重试');
+      return;
+    }
 
-      await processBatch(failedAccounts, namePrefix);
-    },
-    [progress.results, processBatch]
-  );
+    await processBatch(failedAccounts);
+  }, [progress.results, processBatch]);
 
   // 重置进度
   const resetProgress = useCallback(() => {

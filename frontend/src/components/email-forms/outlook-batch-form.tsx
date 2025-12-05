@@ -24,7 +24,6 @@ import { toast } from 'sonner';
 
 const outlookBatchSchema = z.object({
   batchData: z.string().min(1, '请输入批量数据'),
-  namePrefix: z.string().min(1, '请输入账户名称前缀'),
 });
 
 type OutlookBatchForm = z.infer<typeof outlookBatchSchema>;
@@ -49,9 +48,6 @@ export function OutlookBatchForm({ onSuccess, onCancel }: OutlookBatchFormProps)
     reset,
   } = useForm<OutlookBatchForm>({
     resolver: zodResolver(outlookBatchSchema),
-    defaultValues: {
-      namePrefix: 'Outlook账户',
-    },
   });
 
   const batchDataValue = watch('batchData', '');
@@ -83,7 +79,7 @@ export function OutlookBatchForm({ onSuccess, onCancel }: OutlookBatchFormProps)
     }
 
     setShowResults(true);
-    await processBatch(accounts, data.namePrefix);
+    await processBatch(accounts);
   };
 
   // 导出结果
@@ -131,37 +127,15 @@ export function OutlookBatchForm({ onSuccess, onCancel }: OutlookBatchFormProps)
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="space-y-4">
             <div>
-              <Label htmlFor="namePrefix" className="text-gray-700 dark:text-gray-300">
-                账户名称前缀
-              </Label>
-              <input
-                id="namePrefix"
-                type="text"
-                placeholder="Outlook账户"
-                {...register('namePrefix')}
-                className={`mt-1 h-10 w-full px-3 py-2 border rounded-md ${
-                  errors.namePrefix
-                    ? 'border-red-400 focus:border-red-500'
-                    : 'border-gray-300 dark:border-gray-600 focus:border-gray-900 dark:focus:border-gray-100'
-                } bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100`}
-                disabled={progress.isProcessing}
-              />
-              {errors.namePrefix && (
-                <p className="text-sm text-red-500 mt-1">{errors.namePrefix.message}</p>
-              )}
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                账户将命名为：{watch('namePrefix', 'Outlook账户')} 1,{' '}
-                {watch('namePrefix', 'Outlook账户')} 2...
-              </p>
-            </div>
-
-            <div>
               <div className="flex items-center justify-between mb-1">
                 <Label htmlFor="batchData" className="text-gray-700 dark:text-gray-300">
                   批量数据
                 </Label>
                 <span className="text-xs text-gray-500 dark:text-gray-400">{lineCount} 行</span>
               </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                每个账户的名称将直接使用对应的邮箱地址。
+              </p>
               <Textarea
                 id="batchData"
                 placeholder="请输入批量数据，每行一个账户&#10;格式：邮箱----密码----客户端ID----刷新令牌&#10;&#10;示例：&#10;user1@outlook.com----password1----12345678-1234-1234-1234-123456789012----refresh_token_1&#10;user2@hotmail.com----password2----87654321-4321-4321-4321-210987654321----refresh_token_2"
@@ -223,6 +197,7 @@ export function OutlookBatchForm({ onSuccess, onCancel }: OutlookBatchFormProps)
                   <li>
                     邮箱必须是Outlook相关域名（@outlook.com, @hotmail.com, @live.com, @msn.com）
                   </li>
+                  <li>账户名称将自动使用邮箱地址，无需额外填写前缀</li>
                   <li>密码字段保留但不使用（OAuth2模式）</li>
                   <li>客户端ID必须是有效的UUID格式</li>
                   <li>刷新令牌必须是有效的OAuth2刷新令牌</li>
@@ -295,7 +270,7 @@ user3@live.com----password3----11111111-2222-3333-4444-555555555555----refresh_t
                           type="button"
                           size="sm"
                           variant="outline"
-                          onClick={() => retryFailed(watch('namePrefix'))}
+                          onClick={() => retryFailed()}
                           className="text-xs"
                         >
                           <RefreshCw className="w-3 h-3 mr-1" />
